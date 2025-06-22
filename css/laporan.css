@@ -1,0 +1,193 @@
+       :root {
+            --primary: #7e57c2;
+            --primary-dark: #5e35b1;
+            --primary-light: #b39ddb;
+            --secondary: #26a69a;
+            --dark: #263238;
+            --light: #f5f5f5;
+            --gray: #757575;
+            --white: #ffffff;
+            --success: #66bb6a;
+            --warning: #ffa726;
+            --danger: #ef5350;
+            --info: #03a9f4;
+            --header-text: var(--white);
+            
+            --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.5;
+            padding: 60px 20px;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: var(--white);
+            padding: 60px 50px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-card);
+        }
+
+        .section-title {
+            color: var(--dark);
+            margin-bottom: 12px;
+            font-size: 2.2em;
+            font-weight: 300;
+            text-align: center;
+            letter-spacing: -0.5px;
+        }
+
+        .date-display {
+            text-align: center;
+            font-size: 0.95em;
+            color: var(--gray);
+            margin-bottom: 60px;
+            font-weight: 400;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background-color: var(--white);
+            border: 1px solid #e8e8e8;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-card);
+        }
+
+        .card-header {
+            padding: 20px 24px 16px;
+            font-weight: 500;
+            font-size: 0.9em;
+            color: var(--gray);
+            background-color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* Subtle accent colors for headers */
+        .card-primary .card-header { color: var(--primary); }
+        .card-accent-success .card-header { color: var(--success); }
+        .card-accent-warning .card-header { color: var(--warning); }
+        .card-accent-danger .card-header { color: var(--danger); }
+        .card-accent-info .card-header { color: var(--info); }
+        .card-accent-secondary .card-header { color: var(--secondary); }
+        .card-accent-dark .card-header { color: var(--dark); }
+        .card-total-sales .card-header { color: var(--primary-dark); }
+
+        .card-body {
+            padding: 24px;
+            background-color: var(--white);
+        }
+
+        .card-body .number {
+            font-size: 2.4em;
+            font-weight: 200;
+            color: var(--dark);
+            display: block;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .card-body .label {
+            font-size: 0.85em;
+            color: var(--gray);
+            font-weight: 400;
+            text-transform: capitalize;
+        }
+
+        /* Subtle left border accent */
+        .card-primary { border-left: 3px solid var(--primary); }
+        .card-accent-success { border-left: 3px solid var(--success); }
+        .card-accent-warning { border-left: 3px solid var(--warning); }
+        .card-accent-danger { border-left: 3px solid var(--danger); }
+        .card-accent-info { border-left: 3px solid var(--info); }
+        .card-accent-secondary { border-left: 3px solid var(--secondary); }
+        .card-accent-dark { border-left: 3px solid var(--dark); }
+        .card-total-sales { border-left: 3px solid var(--primary-dark); }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 40px 15px;
+            }
+            
+            .container {
+                padding: 40px 30px;
+            }
+            
+            .section-title {
+                font-size: 1.8em;
+            }
+            
+            .card-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .section-title {
+                font-size: 1.6em;
+            }
+            
+            .card-header {
+                padding: 16px 20px 12px;
+                font-size: 0.8em;
+            }
+            
+            .card-body {
+                padding: 20px;
+            }
+            
+            .card-body .number {
+                font-size: 2em;
+            }
+        }
+
+        /* Clean print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 40px 20px;
+            }
+            
+            .card {
+                break-inside: avoid;
+                margin-bottom: 20px;
+            }
+        }
