@@ -1,4 +1,4 @@
-    /* ... (CSS Anda yang sudah ada di sini, tidak ada perubahan) ... */
+
     :root {
       --primary: #7e57c2;
       --primary-dark: #5e35b1;
@@ -515,15 +515,11 @@
 
     .chart-container {
       position: relative;
-      /* Penting untuk responsivitas Chart.js */
+
       height: 400px;
-      /* Atur tinggi maksimum kontainer grafik */
       width: 100%;
-      /* Atur lebar maksimum kontainer grafik */
       max-width: 900px;
-      /* Batasi lebar maksimal agar tidak terlalu besar di layar lebar */
       margin: 0 auto;
-      /* Tengah-tengah kontainer */
       background-color: var(--white);
       padding: 20px;
       border-radius: var(--border-radius);
@@ -533,7 +529,6 @@
     @media (max-width: 768px) {
       .chart-container {
         height: 300px;
-        /* Sesuaikan tinggi untuk layar yang lebih kecil */
       }
     }
 
@@ -542,12 +537,12 @@
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    max-width: 600px; /* Limit width of content container */
-    margin: 30px auto; /* Center the container */
+    max-width: 600px; 
+    margin: 30px auto; 
 }
 
 button[type="submit"] {
-    background-color: #8a2be2; /* Purple button */
+    background-color: #8a2be2; 
     color: white;
     padding: 12px 20px;
     border: none;
@@ -555,13 +550,13 @@ button[type="submit"] {
     font-size: 18px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    align-self: flex-end; /* Align button to the right */
-    width: auto; /* Adjust width based on content */
+    align-self: flex-end; 
+    width: auto; 
     min-width: 120px;
 }
 
 button[type="submit"]:hover {
-    background-color: #6a1ba3; /* Darker purple on hover */
+    background-color: #6a1ba3; 
 }
 
 input[type="text"] {
@@ -570,7 +565,7 @@ input[type="text"] {
     border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 16px;
-    box-sizing: border-box; /* Include padding in element's total width/height */
+    box-sizing: border-box; 
 }
 
 input[type="text"]::placeholder {

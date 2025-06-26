@@ -130,8 +130,7 @@
         $nama = $_POST['nama_jenis'];
         mysqli_query($koneksi, "INSERT INTO jenis_menu (nama_jenis) VALUES ('$nama')");
         echo "<script>alert('Data jenis menu berhasil ditambahkan.');</script>";
-        // Redirect to prevent form resubmission on refresh
-        // echo "<script>window.location.href='input_jenis_menu.php';</script>";
+
     }
     ?>
 </body>

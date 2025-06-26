@@ -50,6 +50,94 @@ include 'koneksi.php';
         .container button:hover {
             background-color: #5a3197;
         }
+
+        .menu-selection-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .menu-item-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .menu-item-row select {
+            flex: 2;
+            width: auto;
+        }
+
+        .menu-item-row input[type="number"] {
+            flex: 1;
+            width: auto;
+        }
+
+        .menu-item-row button {
+            flex: 0;
+            width: auto;
+            padding: 5px 10px;
+            background-color: #dc3545;
+            font-size: 12px;
+        }
+
+        .menu-item-row button:hover {
+            background-color: #c82333;
+        }
+
+        .add-menu-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .add-menu-btn:hover {
+            background-color: #218838;
+        }
+
+        .meja-input {
+            display: none;
+        }
+
+        .meja-input.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .selected-menus {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+            margin-top: 15px;
+        }
     </style>
 </head>
 
@@ -89,10 +177,15 @@ include 'koneksi.php';
 
                         <div class="form-group">
                             <label for="jenis_booking">Jenis Pemesanan:</label>
-                            <select id="jenis_booking" name="jenis_booking">
+                            <select id="jenis_booking" name="jenis_booking" onchange="toggleMejaInput()">
                                 <option value="meja">Pesan Meja</option>
                                 <option value="takeaway">Takeaway</option>
                             </select>
+                        </div>
+
+                        <div class="form-group meja-input show" id="meja-input">
+                            <label for="nomor_meja">Nomor Meja:</label>
+                            <input type="number" id="nomor_meja" name="nomor_meja" placeholder="Masukkan nomor meja" min="1">
                         </div>
 
                         <div class="form-group">
@@ -102,22 +195,17 @@ include 'koneksi.php';
 
                         <div class="menu-selection-section">
                             <h3>Pilih Menu Favorit Anda:</h3>
-                            <?php
-                            $menu = mysqli_query($koneksi, "SELECT id_menu, nama_menu, harga FROM menu ORDER BY nama_menu ASC");
+                            <button type="button" class="add-menu-btn" onclick="addMenuRow()">+ Tambah Menu</button>
+                            
+                            <div id="menu-container">
+                                <!-- Menu rows will be added here dynamically -->
+                            </div>
 
-                            if ($menu && mysqli_num_rows($menu) > 0) {
-                                while ($menu_item_db = mysqli_fetch_assoc($menu)) {
-                                    $clean_menu_name = str_replace(' ', '_', strtolower($menu_item_db['nama_menu']));
-                                    echo "<div class='menu-item'>";
-                                    echo "<input type='checkbox' name='menu_items[{$menu_item_db['id_menu']}]' value='{$menu_item_db['nama_menu']}' data-price='{$menu_item_db['harga']}' id='menu_{$clean_menu_name}'>";
-                                    echo "<label for='menu_{$clean_menu_name}'>{$menu_item_db['nama_menu']} - Rp " . number_format($menu_item_db['harga'], 0, ',', '.') . "</label>";
-                                    echo "<input type='number' name='qty_{$clean_menu_name}' min='1' value='1' disabled>";
-                                    echo "</div>";
-                                }
-                            } else {
-                                echo "<p>Tidak ada menu tersedia saat ini.</p>";
-                            }
-                            ?>
+                            <div class="selected-menus" id="selected-menus" style="display: none;">
+                                <h4>Menu yang Dipilih:</h4>
+                                <div id="menu-summary"></div>
+                                <div id="total-price" style="font-weight: bold; margin-top: 10px;"></div>
+                            </div>
                         </div>
 
                         <button type="submit">Konfirmasi Pemesanan</button>
@@ -128,47 +216,83 @@ include 'koneksi.php';
                         $nama = mysqli_real_escape_string($koneksi, $_POST['nama_pelanggan']);
                         $jenis = mysqli_real_escape_string($koneksi, $_POST['jenis_booking']);
                         $waktu = mysqli_real_escape_string($koneksi, $_POST['waktu_booking']);
+                        
+                        // Handle nomor meja
+                        $jenis_detail = $jenis;
+                        if ($jenis == 'meja' && !empty($_POST['nomor_meja'])) {
+                            $nomor_meja = intval($_POST['nomor_meja']);
+                            $jenis_detail = "meja " . $nomor_meja;
+                        }
 
                         $menu_dipesan_array = [];
                         $total_harga = 0;
 
-                        if (isset($_POST['menu_items']) && is_array($_POST['menu_items'])) {
-                            foreach ($_POST['menu_items'] as $id_menu => $menu_name_val) {
-                                $stmt_menu_detail = mysqli_prepare($koneksi, "SELECT nama_menu, harga FROM menu WHERE id_menu = ?");
-                                mysqli_stmt_bind_param($stmt_menu_detail, "i", $id_menu);
-                                mysqli_stmt_execute($stmt_menu_detail);
-                                $result_menu_detail = mysqli_stmt_get_result($stmt_menu_detail);
-                                $db_menu_item = mysqli_fetch_assoc($result_menu_detail);
-                                mysqli_stmt_close($stmt_menu_detail);
-
-                                if ($db_menu_item) {
-                                    $actual_menu_name = $db_menu_item['nama_menu'];
-                                    $actual_menu_price = $db_menu_item['harga'];
-
-                                    // Get quantity using the sanitized name from DB
-                                    $clean_menu_name_for_qty = str_replace(' ', '_', strtolower($actual_menu_name));
-                                    $qty = isset($_POST['qty_' . $clean_menu_name_for_qty]) ? intval($_POST['qty_' . $clean_menu_name_for_qty]) : 1;
-                                    if ($qty < 1) $qty = 1; // Ensure quantity is at least1
-
-                                    $menu_dipesan_array[] = "{$actual_menu_name} (x{$qty})";
-                                    $total_harga += ($actual_menu_price * $qty);
+                        // Process selected menus from hidden inputs
+                        if (isset($_POST['selected_menus']) && !empty($_POST['selected_menus'])) {
+                            $selected_menus = json_decode($_POST['selected_menus'], true);
+                            
+                            if (is_array($selected_menus)) {
+                                foreach ($selected_menus as $menu_item) {
+                                    if (isset($menu_item['id']) && isset($menu_item['qty'])) {
+                                        $id_menu = intval($menu_item['id']);
+                                        $qty = intval($menu_item['qty']);
+                                        
+                                        if ($id_menu > 0 && $qty > 0) {
+                                            // Get menu details from database
+                                            $stmt_menu = mysqli_prepare($koneksi, "SELECT nama_menu, harga FROM menu WHERE id_menu = ?");
+                                            
+                                            if ($stmt_menu) {
+                                                mysqli_stmt_bind_param($stmt_menu, "i", $id_menu);
+                                                mysqli_stmt_execute($stmt_menu);
+                                                $result_menu = mysqli_stmt_get_result($stmt_menu);
+                                                $menu_data = mysqli_fetch_assoc($result_menu);
+                                                mysqli_stmt_close($stmt_menu);
+                                                
+                                                if ($menu_data) {
+                                                    $menu_dipesan_array[] = "{$menu_data['nama_menu']} (x{$qty})";
+                                                    $total_harga += ($menu_data['harga'] * $qty);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
+
                         $menu_text = implode(", ", $menu_dipesan_array);
 
-                        // Save to database (using mysqli_query for simplicity in this prototype)
-                        // Ensure column `total_harga` exists in your `booking` table if you want to save it
+                        // Save to database
                         $sql_insert_booking = "INSERT INTO booking (nama_pelanggan, jenis_booking, waktu_booking, menu_dipesan, total_harga) 
-                                   VALUES ('$nama', '$jenis', '$waktu', '$menu_text', '$total_harga')";
-
-                        if (mysqli_query($koneksi, $sql_insert_booking)) {
-                            echo '<p class="success-message">Data booking has been successfully added. Total Harga: Rp ' . number_format($total_harga, 0, ',', '.') . '</p>';
+                                               VALUES (?, ?, ?, ?, ?)";
+                        
+                        $stmt = mysqli_prepare($koneksi, $sql_insert_booking);
+                        
+                        if ($stmt === false) {
+                            // Fallback to regular query if prepared statement fails
+                            $nama_escaped = mysqli_real_escape_string($koneksi, $nama);
+                            $jenis_detail_escaped = mysqli_real_escape_string($koneksi, $jenis_detail);
+                            $waktu_escaped = mysqli_real_escape_string($koneksi, $waktu);
+                            $menu_text_escaped = mysqli_real_escape_string($koneksi, $menu_text);
+                            
+                            $sql_fallback = "INSERT INTO booking (nama_pelanggan, jenis_booking, waktu_booking, menu_dipesan, total_harga) 
+                                           VALUES ('$nama_escaped', '$jenis_detail_escaped', '$waktu_escaped', '$menu_text_escaped', $total_harga)";
+                            
+                            if (mysqli_query($koneksi, $sql_fallback)) {
+                                echo '<p class="success-message">Data booking berhasil ditambahkan. Total Harga: Rp ' . number_format($total_harga, 0, ',', '.') . '</p>';
+                            } else {
+                                echo '<p class="error-message">Error: ' . mysqli_error($koneksi) . '</p>';
+                            }
                         } else {
-                            echo '<p class="error-message">Error: ' . mysqli_error($koneksi) . '</p>';
+                            mysqli_stmt_bind_param($stmt, "ssssi", $nama, $jenis_detail, $waktu, $menu_text, $total_harga);
+                            
+                            if (mysqli_stmt_execute($stmt)) {
+                                echo '<p class="success-message">Data booking berhasil ditambahkan. Total Harga: Rp ' . number_format($total_harga, 0, ',', '.') . '</p>';
+                            } else {
+                                echo '<p class="error-message">Error executing statement: ' . mysqli_stmt_error($stmt) . '</p>';
+                            }
+                            
+                            mysqli_stmt_close($stmt);
                         }
-
-                        // mysqli_close($koneksi); // Close connection if no more database operations are needed
                     }
                     ?>
                 </div>
@@ -176,34 +300,143 @@ include 'koneksi.php';
         </main>
     </div>
 
+    <!-- Hidden input to store selected menus data -->
+    <input type="hidden" name="selected_menus" id="selected_menus_input">
+
     <script>
-        // Enable quantity input when checkbox is checked
-        document.querySelectorAll('.menu-selection-section input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                // Find the corresponding quantity input for this checkbox
-                const qtyInput = this.nextElementSibling.nextElementSibling; // Skip label, then get input
-                if (qtyInput && qtyInput.type === 'number') {
-                    qtyInput.disabled = !this.checked;
-                    if (!this.checked) {
-                        qtyInput.value = 1; // Reset quantity if unchecked
-                    }
+        // Menu data from PHP
+        const menuData = [
+            <?php
+            $menu_query = mysqli_query($koneksi, "SELECT id_menu, nama_menu, harga FROM menu ORDER BY nama_menu ASC");
+            $menu_items = [];
+            
+            if ($menu_query && mysqli_num_rows($menu_query) > 0) {
+                while ($menu_item = mysqli_fetch_assoc($menu_query)) {
+                    $menu_items[] = "{id: {$menu_item['id_menu']}, name: '{$menu_item['nama_menu']}', price: {$menu_item['harga']}}";
+                }
+            }
+            echo implode(',', $menu_items);
+            ?>
+        ];
+
+        let selectedMenus = [];
+        let menuRowCounter = 0;
+
+        function toggleMejaInput() {
+            const jenisBooking = document.getElementById('jenis_booking').value;
+            const mejaInput = document.getElementById('meja-input');
+            const nomorMejaField = document.getElementById('nomor_meja');
+            
+            if (jenisBooking === 'meja') {
+                mejaInput.classList.add('show');
+                nomorMejaField.required = true;
+            } else {
+                mejaInput.classList.remove('show');
+                nomorMejaField.required = false;
+                nomorMejaField.value = '';
+            }
+        }
+
+        function addMenuRow() {
+            const container = document.getElementById('menu-container');
+            const rowId = 'menu-row-' + menuRowCounter++;
+            
+            const menuRow = document.createElement('div');
+            menuRow.className = 'menu-item-row';
+            menuRow.id = rowId;
+            
+            let menuOptions = '<option value="">-- Pilih Menu --</option>';
+            menuData.forEach(menu => {
+                menuOptions += `<option value="${menu.id}" data-price="${menu.price}">${menu.name} - Rp ${menu.price.toLocaleString('id-ID')}</option>`;
+            });
+            
+            menuRow.innerHTML = `
+                <select onchange="updateMenuSelection('${rowId}')">
+                    ${menuOptions}
+                </select>
+                <input type="number" min="1" value="1" placeholder="Qty" onchange="updateMenuSelection('${rowId}')">
+                <button type="button" onclick="removeMenuRow('${rowId}')">Hapus</button>
+            `;
+            
+            container.appendChild(menuRow);
+        }
+
+        function removeMenuRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                updateSelectedMenus();
+            }
+        }
+
+        function updateMenuSelection(rowId) {
+            updateSelectedMenus();
+        }
+
+        function updateSelectedMenus() {
+            selectedMenus = [];
+            const menuRows = document.querySelectorAll('.menu-item-row');
+            
+            menuRows.forEach(row => {
+                const select = row.querySelector('select');
+                const qtyInput = row.querySelector('input[type="number"]');
+                
+                if (select.value && qtyInput.value) {
+                    const selectedOption = select.options[select.selectedIndex];
+                    selectedMenus.push({
+                        id: select.value,
+                        name: selectedOption.text.split(' - ')[0],
+                        price: parseInt(selectedOption.dataset.price),
+                        qty: parseInt(qtyInput.value)
+                    });
                 }
             });
-        });
+            
+            // Update hidden input
+            document.getElementById('selected_menus_input').value = JSON.stringify(selectedMenus);
+            
+            // Update summary display
+            updateMenuSummary();
+        }
 
-        // Ensure minimum date for datetime-local is current time in Pekanbaru
-        // Note: This relies on client-side time, which can be inaccurate for strict booking
-        // For accurate booking, server-side validation of time slots is crucial.
+        function updateMenuSummary() {
+            const summaryDiv = document.getElementById('menu-summary');
+            const totalPriceDiv = document.getElementById('total-price');
+            const selectedMenusDiv = document.getElementById('selected-menus');
+            
+            if (selectedMenus.length === 0) {
+                selectedMenusDiv.style.display = 'none';
+                return;
+            }
+            
+            selectedMenusDiv.style.display = 'block';
+            
+            let summaryHTML = '';
+            let totalPrice = 0;
+            
+            selectedMenus.forEach(menu => {
+                const subtotal = menu.price * menu.qty;
+                totalPrice += subtotal;
+                summaryHTML += `<div>${menu.name} x${menu.qty} = Rp ${subtotal.toLocaleString('id-ID')}</div>`;
+            });
+            
+            summaryDiv.innerHTML = summaryHTML;
+            totalPriceDiv.innerHTML = `Total: Rp ${totalPrice.toLocaleString('id-ID')}`;
+        }
+
+        // Initialize with one menu row
+        addMenuRow();
+
+        // Set minimum datetime to current time
         const now = new Date();
         const year = now.getFullYear();
-        const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Perbaikan di sini (tambahkan + bukan spasi)
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
         const day = now.getDate().toString().padStart(2, '0');
         const hours = now.getHours().toString().padStart(2, '0');
         const minutes = now.getMinutes().toString().padStart(2, '0');
-
-        // Contoh format tanggal dan waktu
-        const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes}`;
-        console.log(formattedDateTime); // Output: "2023-08-15 14:30" (contoh)
+        
+        const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+        document.getElementById('waktu_booking').min = minDateTime;
     </script>
 </body>
 

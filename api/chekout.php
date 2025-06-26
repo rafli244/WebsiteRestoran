@@ -84,8 +84,6 @@ try {
         $stmt_update_menu->bind_param("ii", $jumlah, $id_menu);
         $stmt_update_menu->execute();
         if ($stmt_update_menu->affected_rows === 0) {
-            // Ini mungkin tidak selalu error fatal jika menu tidak ditemukan,
-            // tapi baiknya log atau tangani sesuai kebutuhan bisnis
             error_log("Warning: Failed to update total_terjual for menu ID " . $id_menu);
         }
     }

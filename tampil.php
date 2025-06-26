@@ -1,28 +1,25 @@
 <?php
 date_default_timezone_set('Asia/Jakarta');
-include 'koneksi.php';          // koneksi DB
+include 'koneksi.php';          
 
 $tanggal_hari_ini = date('Y-m-d');
 
-/* ---------- QUERY RINGAN (karena sudah ada INDEX) ---------- */
+
 function getSingleResult($koneksi, $sql) {
     $r = $koneksi->query($sql);
     return ($r && $r->num_rows) ? $r->fetch_assoc() : null;
 }
 
-/* 1. Menu Global Terfavorit – view lama -------------------------------- */
 $menu_favorit   = getSingleResult($koneksi,
     "SELECT nama_menu, total_dipesan
      FROM menufavorit
      ORDER BY total_dipesan DESC LIMIT 1");
 
-/* 2. Termahal & Termurah --------------------------------------------- */
 $menu_termahal  = getSingleResult($koneksi,
     "SELECT nama_menu, harga FROM menu ORDER BY harga DESC LIMIT 1");
 $menu_termurah  = getSingleResult($koneksi,
     "SELECT nama_menu, harga FROM menu ORDER BY harga ASC  LIMIT 1");
 
-/* 3. Menu paling tidak diminati -------------------------------------- */
 $menu_tidak_diminati = getSingleResult($koneksi, "
     SELECT m.nama_menu,
            COALESCE(SUM(dt.jumlah),0) AS total_dipesan
@@ -32,7 +29,6 @@ $menu_tidak_diminati = getSingleResult($koneksi, "
     ORDER BY total_dipesan ASC, m.nama_menu
     LIMIT 1");
 
-/* 4. Jenis menu paling laku ------------------------------------------ */
 $jenis_menu_populer = getSingleResult($koneksi, "
     SELECT jm.nama_jenis,
            SUM(dt.jumlah) AS total_dipesan
@@ -43,7 +39,6 @@ $jenis_menu_populer = getSingleResult($koneksi, "
     ORDER BY total_dipesan DESC
     LIMIT 1");
 
-/* 5. Menu favorit *per jenis*  (dipelihara trigger + index) ---------- */
 $favorit_per_jenis = [];
 $sqlFavJenis = "
     SELECT jm.nama_jenis,
@@ -58,7 +53,6 @@ if ($q = $koneksi->query($sqlFavJenis)) {
     while ($row = $q->fetch_assoc()) $favorit_per_jenis[] = $row;
 }
 
-/* 6. Penjualan hari ini ---------------------------------------------- */
 $total_hari_ini = getSingleResult($koneksi, "
     SELECT COALESCE(SUM(subtotal),0) AS total_penjualan
     FROM detail_transaksi d
@@ -170,9 +164,9 @@ mysqli_close($koneksi);
                 <div class="brand-name">Double Box</div>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item"><a href="index1.php" class="nav-link"><i class="fas fa-cash-register"></i><span>Dashboard</span></a></li>
+                <li class="nav-item"><a href="index1.php" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
                 <li class="nav-item"><a href="Kasir.php" class="nav-link"><i class="fas fa-cash-register"></i><span>Kasir</span></a></li>
-                <li class="nav-item"><a href="input_jenis_menu.php" class="nav-link"><i class="fas fa-cash-register"></i><span>Jenis Menu</span></a></li>
+                <li class="nav-item"><a href="input_jenis_menu.php" class="nav-link"><i class="fas fa-list"></i><span>Jenis Menu</span></a></li>
                 <li class="nav-item"><a href="input_menu.php" class="nav-link"><i class="fas fa-hamburger"></i><span>Menu Makanan</span></a></li>
                 <li class="nav-item"><a href="input_booking.php" class="nav-link"><i class="fas fa-calendar-check"></i><span>Booking</span></a></li>
                 <li class="nav-item"><a href="#" class="nav-link active"><i class="fas fa-chart-bar"></i><span>Laporan</span></a></li>

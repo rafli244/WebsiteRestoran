@@ -1,4 +1,4 @@
-/* Global Reset & Body Styling */
+
 * {
   margin: 0;
   padding: 0;
@@ -16,14 +16,14 @@ body {
   background-image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJ0EqHI6h5QgFTXGG_1i2FADG1xulRbVtecA&s";
 }
 
-/* Title */
+
 h1, h2 {
   margin-bottom: 20px;
   color: #222;
   text-align: center;
 }
 
-/* Form Container */
+
 form {
   background: white;
   padding: 30px;
@@ -34,7 +34,7 @@ form {
   margin-bottom: 30px;
 }
 
-/* Input Field */
+
 form input[type="text"],
 form input[type="number"],
 form input[type="date"],
@@ -56,7 +56,6 @@ select:focus {
   outline: none;
 }
 
-/* Button Style */
 button {
   width: 100%;
   background: #007bff;
@@ -73,7 +72,7 @@ button:hover {
   background: #0056b3;
 }
 
-/* Dashboard Button (index.php style) */
+
 .dashboard-button {
   display: block;
   width: 100%;

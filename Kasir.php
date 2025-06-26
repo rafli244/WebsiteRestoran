@@ -190,7 +190,7 @@ include 'koneksi.php'; // Pastikan koneksi database sudah diatur di file ini
             if (!confirmation) return;
 
             try {
-                const response = await fetch('api/checkout.php', {
+                const response = await fetch('api/chekout.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

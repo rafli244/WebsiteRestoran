@@ -1,7 +1,13 @@
 <?php
-$koneksi = mysqli_connect("localhost", "root", "", "restoran_lezat");
+$host = "localhost";
+$user = "root"; 
+$pass = "";     
+$db   = "restoran_lezat";
 
-if (mysqli_connect_errno()) {
-    die("" . mysqli_connect_error());
+$koneksi = new mysqli($host, $user, $pass, $db);
+
+if ($koneksi->connect_error) {
+    die("Koneksi database gagal: " . $koneksi->connect_error);
 }
+$koneksi->set_charset("utf8mb4");
 ?>

@@ -6,12 +6,11 @@ include 'koneksi.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Menu</title>
+    <title>Tambah Menu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/index1.css">
     <style>
-        /* Tambahkan style CSS yang diperlukan disini */
         .container {
             padding: 20px;
             text-align: center;
@@ -60,8 +59,8 @@ include 'koneksi.php';
                 <div class="brand-name">Double Box</div>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item"><a href="dashboard.php" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
-                <li class="nav-item"><a href="pos.php" class="nav-link"><i class="fas fa-cash-register"></i><span>Kasir</span></a></li>
+                <li class="nav-item"><a href="index1.php" class="nav-link"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+                <li class="nav-item"><a href="kasir.php" class="nav-link"><i class="fas fa-cash-register"></i><span>Kasir</span></a></li>
                 <li class="nav-item"><a href="input_jenis_menu.php" class="nav-link"><i class="fas fa-list"></i><span>Jenis Menu</span></a></li>
                 <li class="nav-item"><a href="input_menu.php" class="nav-link active"><i class="fas fa-hamburger"></i><span>Menu Makanan</span></a></li>
                 <li class="nav-item"><a href="input_booking.php" class="nav-link"><i class="fas fa-calendar-check"></i><span>Booking</span></a></li>
@@ -71,16 +70,16 @@ include 'koneksi.php';
 
         <main class="main-content">
             <div class="header">
-                <h1 class="page-title" id="page-title">Edit Menu</h1>
+                <h1 class="page-title" id="page-title">Tambah Menu</h1>
                 <div class="user-profile">
                     <div class="user-avatar">A</div><span>Admin</span>
                 </div>
             </div>
 
-            <section id="edit-menu-section">
+            <section id="add-menu-section">
                 <div class="container">
-                    <h2>Edit Menu</h2>
-                    <form method="POST">
+                    <h2>Tambah Menu</h2>
+                    <form id="add-menu-form" method="POST">
                         <div class="form-group">
                             <label for="nama_menu">Nama Menu:</label>
                             <input type="text" id="nama_menu" name="nama_menu" placeholder="Nama menu" required>
@@ -95,15 +94,11 @@ include 'koneksi.php';
                             <label for="id_jenis">Jenis Menu:</label>
                             <select id="id_jenis" name="id_jenis">
                                 <?php
-                                $edit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-                                $menu = mysqli_query($koneksi, "SELECT * FROM menu WHERE id_menu = '$edit_id'");
-                                $row = mysqli_fetch_assoc($menu);
-
                                 $jenis = mysqli_query($koneksi, "SELECT id_jenis, nama_jenis FROM jenis_menu ORDER BY nama_jenis ASC");
                                 
                                 if ($jenis && mysqli_num_rows($jenis) > 0) {
                                     while ($row_jenis = mysqli_fetch_assoc($jenis)) {
-                                        echo "<option value='{$row_jenis['id_jenis']}'" . ($row['id_jenis'] == $row_jenis['id_jenis'] ? " selected" : "") . ">{$row_jenis['nama_jenis']}</option>";
+                                        echo "<option value='{$row_jenis['id_jenis']}'>{$row_jenis['nama_jenis']}</option>";
                                     }
                                 } else {
                                     echo "<option value=''>Tidak ada jenis menu tersedia</option>";
@@ -112,58 +107,41 @@ include 'koneksi.php';
                             </select>
                         </div>
                         
-                        <input type="hidden" name="id_menu" value="<?php echo $edit_id; ?>">
-                        <button type="submit">Update Menu</button>
+                        <button type="submit">Tambah Menu</button>
                     </form>
 
-                    <?php
-                    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-                        $id_menu = $_POST["id_menu"];
-                        $nama = mysqli_real_escape_string($koneksi, $_POST["nama_menu"]);
-                        $harga = mysqli_real_escape_string($koneksi, $_POST["harga"]);
-                        $id_jenis = mysqli_real_escape_string($koneksi, $_POST["id_jenis"]);
-
-                        if (empty($nama) || empty($harga) || empty($id_jenis)) {
-                            echo "<p class='error-message'>Semua field harus diisi.</p>";
-                        } elseif (!is_numeric($harga) || $harga < 0) {
-                            echo "<p class='error-message'>Harga harus berupa angka positif.</p>";
-                        } else {
-                            $sql_update = "UPDATE menu SET nama_menu='$nama', harga='$harga', id_jenis='$id_jenis' WHERE id_menu='$id_menu'";
-                            
-                            if (mysqli_query($koneksi, $sql_update)) {
-                                echo "<p class='success-message'>Data menu berhasil diupdate.</p>";
-                            } else {
-                                echo "<p class='error-message'>Error updating data menu: " . mysqli_error($koneksi) . "</p>";
-                            }
-                        }
-                    }
-                    ?>
+                    <div id="response-message"></div>
                 </div>
             </section>
         </main>
     </div>
 
     <script>
-        /* ========= NAVIGATION ========= */
-        document.querySelectorAll('.nav-link[data-target]').forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                const target = link.dataset.target;
-                if (!target) return;
-
-                document.querySelectorAll('main section').forEach(sec => sec.style.display = 'none');
-                document.getElementById(target).style.display = 'block';
-                document.getElementById('page-title').textContent = target === 'dashboard-section' ? 'Dashboard Admin' : 'Edit Menu';
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
+        document.getElementById('add-menu-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
             });
-        });
 
-        /* ========= INIT ========= */
-        document.addEventListener('DOMContentLoaded', () => {
-            const currentSection = document.querySelector('main section:visible');
-            if (currentSection) {
-                document.querySelector(`.nav-link[data-target="${currentSection.id}"]`).classList.add('active');
+            try {
+                const response = await fetch('api/input_menu.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                document.getElementById('response-message').innerHTML = `<p class="${result.status === 'success' ? 'success-message' : 'error-message'}">${result.message}</p>`;
+                if (result.status === 'success') {
+                    e.target.reset();
+                }
+            } catch (error) {
+                document.getElementById('response-message').innerHTML = `<p class="error-message">Terjadi kesalahan jaringan saat menambahkan menu. Silakan coba lagi.</p>`;
+                console.error('Network error during menu addition:', error);
             }
         });
     </script>

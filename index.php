@@ -4,7 +4,7 @@ include("koneksi.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
-    $password = md5($_POST['password']); // memakai MD5, bukan hash modern
+    $password = md5($_POST['password']); // memakai MD5
 
     $query = mysqli_query($koneksi, "SELECT * FROM users WHERE username='$username' AND password='$password'");
 
@@ -340,8 +340,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <!-- Video Background -->
     <video class="video-background" autoplay muted loop>
-        <source src="High Wycombe.mp4" type="video/mp4">
-        Your browser does not support the video tag.
+        <source src="Restaurant Ad Video Template (Editable).mp4" type="video/mp4">
     </video>
     <div class="video-overlay"></div>
 
