@@ -1,9 +1,96 @@
 <?php
-// dashboard.php
+session_start(); // Pastikan sesi dimulai
 include 'koneksi.php'; // Sertakan koneksi database
 
-// Tidak ada kode PHP yang menghasilkan output JSON di sini lagi.
-// Ini hanya file HTML/PHP untuk tampilan.
+// Inisialisasi variabel default untuk dashboard
+$total_pendapatan = 0;
+$pendapatan_trend = '0%';
+$total_transaksi = 0;
+$transaksi_trend = '0%';
+$total_booking = 0;
+$booking_trend = '0%';
+$db_error_message = null; // Variabel untuk pesan error database
+
+// Data untuk chart
+$chart_labels = [];
+$chart_revenues = [];
+$chart_transactions = [];
+
+// Fungsi helper untuk menghitung trend (tetap relevan)
+function calculateTrend($today, $yesterday) {
+    if ($yesterday > 0) {
+        $change = (($today - $yesterday) / $yesterday) * 100;
+        return round($change, 2) . '% ' . ($change >= 0 ? '📈' : '📉');
+    } elseif ($today > 0) {
+        return '+∞% 📈';
+    }
+    return '0%';
+}
+
+// Ambil data dashboard dan chart
+try {
+    $today = date('Y-m-d');
+    $yesterday = date('Y-m-d', strtotime('-1 day'));
+
+    // Ambil data dashboard 
+    $result = mysqli_query($koneksi, "SELECT SUM(total_keuntungan) AS total FROM transaksi WHERE DATE(tanggal) = '$today'");
+    $today_revenue = mysqli_fetch_assoc($result)['total'] ?? 0;
+    
+    $result = mysqli_query($koneksi, "SELECT SUM(total_keuntungan) AS total FROM transaksi WHERE DATE(tanggal) = '$yesterday'");
+    $yesterday_revenue = mysqli_fetch_assoc($result)['total'] ?? 0;
+    $pendapatan_trend = calculateTrend($today_revenue, $yesterday_revenue);
+    $total_pendapatan = (float)$today_revenue;
+
+    $result = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM transaksi WHERE DATE(tanggal) = '$today'");
+    $today_transactions = mysqli_fetch_assoc($result)['total'] ?? 0;
+    
+    $result = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM transaksi WHERE DATE(tanggal) = '$yesterday'");
+    $yesterday_transactions = mysqli_fetch_assoc($result)['total'] ?? 0;
+    $transaksi_trend = calculateTrend($today_transactions, $yesterday_transactions);
+    $total_transaksi = (int)$today_transactions;
+
+    $result = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM booking WHERE DATE(waktu_booking) = '$today'");
+    $today_bookings = mysqli_fetch_assoc($result)['total'] ?? 0;
+    
+    $result = mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM booking WHERE DATE(waktu_booking) = '$yesterday'");
+    $yesterday_bookings = mysqli_fetch_assoc($result)['total'] ?? 0;
+    $booking_trend = calculateTrend($today_bookings, $yesterday_bookings);
+    $total_booking = (int)$today_bookings;
+
+    // Ambil data untuk Chart (7 hari terakhir)
+    $seven_days_ago = date('Y-m-d', strtotime('-6 days'));
+    $query_chart = "SELECT DATE(tanggal) AS transaction_date, 
+                    SUM(total_keuntungan) AS daily_revenue, 
+                    COUNT(id_transaksi) AS daily_transactions
+                    FROM transaksi 
+                    WHERE DATE(tanggal) BETWEEN '$seven_days_ago' AND '$today'
+                    GROUP BY transaction_date ORDER BY transaction_date ASC";
+    $result_chart = mysqli_query($koneksi, $query_chart);
+
+    $chart_data_raw = [];
+    if ($result_chart) {
+        while ($row_chart = mysqli_fetch_assoc($result_chart)) {
+            $chart_data_raw[$row_chart['transaction_date']] = [
+                'revenue' => (float)$row_chart['daily_revenue'],
+                'transactions' => (int)$row_chart['daily_transactions']
+            ];
+        }
+    }
+
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $chart_labels[] = date('d M', strtotime($date));
+        $chart_revenues[] = $chart_data_raw[$date]['revenue'] ?? 0;
+        $chart_transactions[] = $chart_data_raw[$date]['transactions'] ?? 0;
+    }
+
+} catch (Exception $e) {
+    error_log("Error fetching dashboard data: " . $e->getMessage());
+    $db_error_message = 'Terjadi kesalahan saat memuat data: ' . $e->getMessage();
+} finally {
+    // Tutup koneksi setelah semua data diambil di sini
+    mysqli_close($koneksi);
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -17,78 +104,61 @@ include 'koneksi.php'; // Sertakan koneksi database
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="css/index1.css">
   <style>
-    /* Tambahkan style CSS yang diperlukan disini */
-    .dashboard-cards .card {
-      margin-bottom: 20px;
+    /* Styling for error messages */
+    .error-message {
+      color: var(--danger);
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
     }
-
-    .quick-actions a {
-      margin-right: 10px;
+    .loading {
+      display: none; /* Hide loading placeholder as data is direct */
     }
-
-    .chart-container {
-      position: relative;
-    }
-
-    .chart-container #chart-status {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
+    
   </style>
 </head>
 
 <body>
   <div class="dashboard-container">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-logo"><i class="fas fa-utensils"></i></div>
-        <div class="brand-name">Double Box</div>
-      </div>
-      <ul class="nav-menu">
-        <li class="nav-item"><a href="#" class="nav-link active"><i class="fas fa-cash-register"></i><span>Dashboard</span></a></li>
-        <li class="nav-item"><a href="Kasir.php" class="nav-link"><i class="fas fa-cash-register"></i><span>Kasir</span></a></li>
-        <li class="nav-item"><a href="input_jenis_menu.php" class="nav-link"><i class="fas fa-list"></i><span>Jenis Menu</span></a></li>
-        <li class="nav-item"><a href="input_menu.php" class="nav-link"><i class="fas fa-hamburger"></i><span>Menu Makanan</span></a></li>
-        <li class="nav-item"><a href="input_booking.php" class="nav-link"><i class="fas fa-calendar-check"></i><span>Booking</span></a></li>
-        <li class="nav-item"><a href="tampil.php" class="nav-link"><i class="fas fa-chart-bar"></i><span>Laporan</span></a></li>
-      </ul>
-    </aside>
+    <?php include '_sidebar.php'; // Sertakan sidebar ?>
 
     <main class="main-content">
       <div class="header">
-        <h1 class="page-title" id="page-title">Dashboard Admin</h1>
+        <h1 class="page-title" id="page-title">Dashboard</h1>
         <div class="user-profile">
-          <div class="user-avatar">A</div><span>Admin</span>
+          <div class="user-avatar">A</div><span>Kasir</span>
         </div>
       </div>
 
       <section id="dashboard-section">
+        <?php if (isset($db_error_message)): ?>
+            <p class="error-message"><?php echo $db_error_message; ?></p>
+        <?php endif; ?>
+
         <div class="dashboard-cards">
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">Total Pendapatan</h3>
               <div class="card-icon primary"><i class="fas fa-wallet"></i></div>
             </div>
-            <div class="card-value" id="total-pendapatan"><span class="loading"></span></div>
-            <div class="card-footer" id="pendapatan-trend">Memuat data...</div>
+            <div class="card-value" id="total-pendapatan"><?php echo number_format($total_pendapatan, 0, ',', '.'); ?></div>
+            <div class="card-footer" id="pendapatan-trend"><?php echo $pendapatan_trend; ?></div>
           </div>
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">Total Transaksi</h3>
               <div class="card-icon secondary"><i class="fas fa-shopping-cart"></i></div>
             </div>
-            <div class="card-value" id="total-transaksi"><span class="loading"></span></div>
-            <div class="card-footer" id="transaksi-trend">Memuat data...</div>
+            <div class="card-value" id="total-transaksi"><?php echo number_format($total_transaksi, 0, ',', '.'); ?></div>
+            <div class="card-footer" id="transaksi-trend"><?php echo $transaksi_trend; ?></div>
           </div>
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">Booking Hari Ini</h3>
               <div class="card-icon success"><i class="fas fa-calendar-day"></i></div>
             </div>
-            <div class="card-value" id="total-booking"><span class="loading"></span></div>
-            <div class="card-footer" id="booking-trend">Memuat data...</div>
+            <div class="card-value" id="total-booking"><span class="loading"></span><?php echo number_format($total_booking, 0, ',', '.'); ?></div>
+            <div class="card-footer" id="booking-trend"><?php echo $booking_trend; ?></div>
           </div>
         </div>
 
@@ -100,7 +170,7 @@ include 'koneksi.php'; // Sertakan koneksi database
           <a href="input_booking.php" class="action-button">
             <div class="action-icon"><i class="fas fa-calendar-plus"></i></div><span class="action-text">Tambah Booking</span>
           </a>
-          <a href="pos.php" class="action-button" id="buat-transaksi-btn">
+          <a href="kasir.php" class="action-button" id="buat-transaksi-btn">
             <div class="action-icon"><i class="fas fa-cash-register"></i></div><span class="action-text">Buat Transaksi</span>
           </a>
           <a href="tampil.php" class="action-button">
@@ -112,203 +182,110 @@ include 'koneksi.php'; // Sertakan koneksi database
         <div class="card chart-container">
           <h3 class="card-title" style="margin-bottom: 1rem;">Pendapatan & Transaksi 7 Hari Terakhir</h3>
           <canvas id="dailyAnalyticsChart"></canvas>
-          <p id="chart-status" style="text-align: center; color: var(--gray); margin-top: 1rem;">Memuat grafik...</p>
+          <p id="chart-status" style="text-align: center; color: var(--gray); margin-top: 1rem;">
+            <?php if (isset($db_error_message)): echo 'Gagal memuat grafik: ' . $db_error_message; else: echo ''; endif; ?>
+          </p>
         </div>
       </section>
     </main>
   </div>
 
-  <script>
-    /* ========= HELPER ========= */
-    const formatterIDR = new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    });
-    const formatCurrency = n => formatterIDR.format(n);
-    const formatNumber = n => n.toLocaleString('id-ID');
+ <script>
+  /* ========= HELPER ========= */
+  const formatterIDR = new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  });
+  const formatCurrency = n => formatterIDR.format(n);
+  const formatNumber = n => n.toLocaleString('id-ID');
 
-    /* ========= DASHBOARD DATA ========= */
-    let dashboardInterval;
+  /* ========= CHART ========= */
+  let dailyAnalyticsChart;
 
-    async function loadDashboardData() {
-      console.log("Memulai pemuatan data dashboard...");
-      try {
-        const response = await fetch('api/dashboard.php');
+  document.addEventListener('DOMContentLoaded', () => {
+    const chartLabels = [<?php echo "'" . implode("','", $chart_labels) . "'"; ?>];
+    const chartRevenues = [<?php echo implode(',', $chart_revenues); ?>];
+    const chartTransactions = [<?php echo implode(',', $chart_transactions); ?>];
+    const chartStatus = document.getElementById('chart-status');
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! Status: ${response.status}. Response: ${errorText}`);
-        }
+    if (chartLabels.length > 0) {
+      const ctx = document.getElementById('dailyAnalyticsChart').getContext('2d');
 
-        const data = await response.json();
-        console.log("Data diterima dari API:", data);
-
-        if (data.status === 'error') {
-          const errorMessage = data.message + (data.details ? ' Details: ' + data.details : '');
-          throw new Error(`Server Error: ${errorMessage}`);
-        }
-
-        document.getElementById('total-pendapatan').textContent = formatCurrency(Number(data.total_pendapatan || 0));
-        document.getElementById('pendapatan-trend').textContent = data.pendapatan_trend || '0%';
-        document.getElementById('total-transaksi').textContent = formatNumber(Number(data.total_transaksi || 0));
-        document.getElementById('transaksi-trend').textContent = data.transaksi_trend || '0%';
-        document.getElementById('total-booking').textContent = formatNumber(Number(data.total_booking || 0));
-        document.getElementById('booking-trend').textContent = data.booking_trend || '0%';
-
-      } catch (e) {
-        console.error("Gagal memuat data dashboard:", e);
-        ['total-pendapatan', 'total-transaksi', 'total-booking'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.textContent = 'Error';
-        });
-        ['pendapatan-trend', 'transaksi-trend', 'booking-trend'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.textContent = 'Gagal memuat';
-        });
+      if (dailyAnalyticsChart) {
+        dailyAnalyticsChart.destroy();
       }
-    }
 
-    function startDashboardAutoRefresh() {
-      loadDashboardData();
-      if (dashboardInterval) {
-        clearInterval(dashboardInterval);
-      }
-      dashboardInterval = setInterval(loadDashboardData, 30000);
-    }
-
-    function stopDashboardAutoRefresh() {
-      clearInterval(dashboardInterval);
-    }
-
-    /* ========= NAVIGATION ========= */
-    document.querySelectorAll('.nav-link[data-target]').forEach(link => {
-      link.addEventListener('click', e => {
-        e.preventDefault();
-        const target = link.dataset.target;
-        if (!target) return;
-
-        document.querySelectorAll('main section').forEach(sec => sec.style.display = 'none');
-        document.getElementById(target).style.display = 'block';
-        document.getElementById('page-title').textContent = target === 'dashboard-section' ? 'Dashboard Admin' : 'Sistem Kasir';
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-
-        if (target === 'dashboard-section') {
-          startDashboardAutoRefresh();
-        } else {
-          stopDashboardAutoRefresh();
-        }
-      });
-    });
-
-    /* ========= INIT ========= */
-    document.addEventListener('DOMContentLoaded', () => {
-      startDashboardAutoRefresh();
-    });
-
-    /* ========= CHART ========= */
-    let dailyAnalyticsChart;
-
-    async function loadDailyAnalyticsChart() {
-      const chartStatus = document.getElementById('chart-status');
-      chartStatus.textContent = 'Memuat grafik...';
-      chartStatus.style.color = 'var(--gray)';
-
-      try {
-        const response = await fetch('api/chart_data.php');
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log("Data grafik diterima:", data);
-
-        if (data.status === 'success') {
-          const ctx = document.getElementById('dailyAnalyticsChart').getContext('2d');
-
-          const dates = data.labels;
-          const revenues = data.datasets.revenue;
-          const transactions = data.datasets.transactions;
-
-          if (dailyAnalyticsChart) {
-            dailyAnalyticsChart.destroy();
-          }
-
-          dailyAnalyticsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: dates,
-              datasets: [{
-                label: 'Pendapatan Harian',
-                data: revenues,
-                borderColor: 'var(--primary)',
-                backgroundColor: 'rgba(126, 87, 194, 0.2)',
-                fill: true,
-                tension: 0.3
-              }, {
-                label: 'Jumlah Transaksi',
-                data: transactions,
-                borderColor: 'var(--secondary)',
-                backgroundColor: 'rgba(38, 166, 154, 0.2)',
-                fill: true,
-                tension: 0.3
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  title: {
-                    display: true,
-                    text: 'Jumlah (Rp / Transaksi)'
-                  }
-                },
-                x: {
-                  title: {
-                    display: true,
-                    text: 'Tanggal'
-                  }
-                }
+      dailyAnalyticsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'Pendapatan Harian',
+            data: chartRevenues,
+            borderColor: '#7E57C2',
+            backgroundColor: 'rgba(126, 87, 194, 0.2)',
+            fill: true,
+            tension: 0.3
+          }, {
+            label: 'Jumlah Transaksi',
+            data: chartTransactions,
+            borderColor: '#26A69A',
+            backgroundColor: 'rgba(38, 166, 154, 0.2)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Jumlah (Rp / Transaksi)'
               },
-              plugins: {
-                tooltip: {
-                  callbacks: {
-                    label: function(context) {
-                      let label = context.dataset.label || '';
-                      if (label) {
-                        label += ': ';
-                      }
-                      if (context.dataset.label === 'Pendapatan Harian') {
-                        label += formatCurrency(context.raw);
-                      } else {
-                        label += formatNumber(context.raw);
-                      }
-                      return label;
-                    }
+              ticks: {
+                callback: function(value) {
+                  return formatCurrency(value);
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Tanggal'
+              }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) label += ': ';
+                  if (context.dataset.label === 'Pendapatan Harian') {
+                    label += formatCurrency(context.raw);
+                  } else {
+                    label += formatNumber(context.raw);
                   }
+                  return label;
                 }
               }
             }
-          });
-          chartStatus.textContent = '';
-        } else {
-          chartStatus.textContent = 'Gagal memuat data grafik: ' + data.message;
-          chartStatus.style.color = 'var(--danger)';
-          console.error('Failed to load chart data:', data.message);
+          }
         }
-      } catch (error) {
-        chartStatus.textContent = 'Error koneksi saat memuat grafik: ' + error.message;
-        chartStatus.style.color = 'var(--danger)';
-        console.error('Error fetching chart data:', error);
-      }
-    }
+      });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      loadDailyAnalyticsChart();
-    });
-  </script>
+      chartStatus.textContent = '';
+    } else {
+      chartStatus.textContent = 'Tidak ada data grafik yang tersedia.';
+      chartStatus.style.color = 'gray';
+    }
+  });
+</script>
+
 </body>
 
 </html>

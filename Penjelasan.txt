@@ -1,0 +1,354 @@
+1. input_transaksi.php
+File ini bertanggung jawab untuk menambahkan data transaksi baru ke database.
+
+Query Ditemukan:
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO transaksi (tanggal, total_keuntungan) VALUES ('$tanggal', $total_keuntungan)
+Kegunaan: Query ini digunakan untuk memasukkan (menambah) data transaksi baru ke dalam tabel transaksi. Data yang disimpan meliputi tanggal transaksi dan total_keuntungan dari transaksi tersebut. Ini adalah bagian dari proses "Create" dalam CRUD.
+
+2. Kasir.php
+File ini mengelola fungsionalitas kasir, termasuk menambah/menghapus item dari keranjang, memperbarui jumlah, dan melakukan checkout yang melibatkan pembuatan transaksi dan detail transaksi.
+
+Query Ditemukan:
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT id_menu, nama_menu, harga FROM menu WHERE id_menu = $menu_id
+Kegunaan: Query ini digunakan untuk mengambil informasi (id, nama, dan harga) dari sebuah menu berdasarkan id_menu yang dipilih. Ini diperlukan saat menambahkan item ke keranjang untuk mendapatkan detail menu.
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO transaksi (tanggal, total_keuntungan) VALUES ('$tanggal_transaksi', $total_amount)
+Kegunaan: Query ini digunakan untuk membuat entri transaksi baru dalam tabel transaksi saat proses checkout selesai. Ini mencatat tanggal transaksi dan total keuntungan dari transaksi tersebut.
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO detail_transaksi (id_transaksi, id_menu, jumlah, subtotal) VALUES ($id_transaksi_baru, $id_menu, $jumlah, $subtotal)
+Kegunaan: Query ini digunakan untuk memasukkan setiap item menu yang ada di keranjang belanja ke dalam tabel detail_transaksi, yang terhubung dengan id_transaksi yang baru dibuat. Ini mencatat detail setiap menu yang dibeli dalam transaksi tertentu.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT id_menu, nama_menu, harga, deskripsi, gambar FROM menu ORDER BY nama_menu ASC
+Kegunaan: Query ini mengambil semua data menu (id, nama, harga, deskripsi, gambar) dari tabel menu untuk ditampilkan kepada kasir agar dapat ditambahkan ke keranjang.
+
+3. tampil.php
+File ini berfungsi untuk menampilkan berbagai laporan dan statistik dari database, seperti menu terfavorit, termahal, termurah, pendapatan, dan transaksi harian.
+
+Query Ditemukan:
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT m.nama_menu, SUM(dt.jumlah) AS total_dipesan
+FROM detail_transaksi dt
+JOIN menu m ON dt.id_menu = m.id_menu
+GROUP BY m.id_menu, m.nama_menu
+ORDER BY total_dipesan DESC LIMIT 1
+Kegunaan: Query ini digunakan untuk menemukan menu yang paling sering dipesan dengan menjumlahkan kuantitas dari detail_transaksi dan mengelompokkannya berdasarkan menu, lalu mengambil yang paling atas.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT nama_menu, harga FROM menu ORDER BY harga DESC LIMIT 1
+Kegunaan: Query ini mengambil nama dan harga menu dengan harga tertinggi dari tabel menu.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT nama_menu, harga FROM menu ORDER BY harga ASC LIMIT 1
+Kegunaan: Query ini mengambil nama dan harga menu dengan harga terendah dari tabel menu.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT SUM(total_keuntungan) AS total FROM transaksi WHERE DATE(tanggal) = '$tanggal_hari_ini'
+Kegunaan: Query ini menghitung total pendapatan untuk tanggal hari ini dari tabel transaksi.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT COUNT(id_transaksi) AS total FROM transaksi WHERE DATE(tanggal) = '$tanggal_hari_ini'
+Kegunaan: Query ini menghitung jumlah total transaksi yang terjadi pada tanggal hari ini.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT j.nama_jenis, SUM(dt.jumlah) AS total_dipesan
+FROM detail_transaksi dt
+JOIN menu m ON dt.id_menu = m.id_menu
+JOIN jenis_menu j ON m.id_jenis = j.id_jenis
+GROUP BY j.id_jenis, j.nama_jenis
+ORDER BY total_dipesan DESC LIMIT 1
+Kegunaan: Query ini mengidentifikasi jenis menu yang paling banyak dipesan dengan mengagregasi data dari detail_transaksi, menu, dan jenis_menu.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT m.nama_menu, SUM(dbm.jumlah) AS total
+FROM detail_booking_menu dbm
+JOIN booking b ON dbm.id_booking = b.id_booking
+JOIN menu m ON dbm.id_menu = m.id_menu
+GROUP BY m.id_menu, m.nama_menu
+ORDER BY total DESC LIMIT 1
+Kegunaan: Query ini menemukan menu yang paling banyak dipesan melalui sistem booking meja.
+
+4. index.php
+File ini adalah halaman login utama untuk sistem.
+
+Query Ditemukan:
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT * FROM users WHERE username='$username' AND password='$password'
+Kegunaan: Query ini digunakan untuk memverifikasi kredensial pengguna (username dan password) saat mencoba login. Ini adalah operasi "Read" untuk otentikasi.
+
+5. index1.php
+File ini berfungsi sebagai halaman dashboard atau ringkasan yang menampilkan data analitik.
+
+Query Ditemukan:
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT SUM(total_keuntungan) AS total FROM transaksi WHERE DATE(tanggal) = '$today'
+Kegunaan: Mengambil total pendapatan untuk hari ini dari tabel transaksi.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT SUM(total_keuntungan) AS total FROM transaksi WHERE DATE(tanggal) = '$yesterday'
+Kegunaan: Mengambil total pendapatan untuk kemarin dari tabel transaksi untuk perhitungan tren.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT COUNT(*) AS total FROM transaksi WHERE DATE(tanggal) = '$today'
+Kegunaan: Menghitung jumlah transaksi untuk hari ini.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT COUNT(*) AS total FROM transaksi WHERE DATE(tanggal) = '$yesterday'
+Kegunaan: Menghitung jumlah transaksi untuk kemarin untuk perhitungan tren.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT COUNT(*) AS total FROM booking WHERE DATE(waktu_booking) = '$today'
+Kegunaan: Menghitung jumlah booking untuk hari ini.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT COUNT(*) AS total FROM booking WHERE DATE(waktu_booking) = '$yesterday'
+Kegunaan: Menghitung jumlah booking untuk kemarin untuk perhitungan tren.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT DATE(tanggal) AS trx_date, SUM(total_keuntungan) AS daily_revenue, COUNT(*) AS daily_transactions
+FROM transaksi
+WHERE tanggal >= DATE_SUB('$today', INTERVAL 7 DAY)
+GROUP BY trx_date
+ORDER BY trx_date ASC
+Kegunaan: Mengambil data pendapatan dan jumlah transaksi harian selama 7 hari terakhir untuk ditampilkan pada chart.
+
+6. input_booking.php
+File ini memungkinkan pengguna untuk membuat booking meja, termasuk memesan menu.
+
+Query Ditemukan:
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT id_menu, nama_menu, harga FROM menu ORDER BY nama_menu ASC
+Kegunaan: Query ini digunakan untuk mengambil daftar semua menu yang tersedia dari tabel menu untuk ditampilkan dalam dropdown pilihan menu saat membuat booking.
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO booking (nama_pemesan, jumlah_orang, waktu_booking, catatan, status) VALUES ('$nama_pemesan', $jumlah_orang, '$waktu_booking', '$catatan', '$status_booking')
+Kegunaan: Query ini digunakan untuk membuat entri booking baru di tabel booking dengan detail pemesan, jumlah orang, waktu, catatan, dan status booking.
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO detail_booking_menu (id_booking, id_menu, jumlah) VALUES ($id_booking_baru, $id_menu, $jumlah)
+Kegunaan: Query ini digunakan untuk menyimpan detail menu yang dipesan dalam booking tertentu ke tabel detail_booking_menu, menghubungkannya dengan id_booking yang baru dibuat.
+
+7. input_detail_transaksi.php
+File ini digunakan untuk menambahkan detail transaksi secara manual.
+
+Query Ditemukan:
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO detail_transaksi (id_transaksi, id_menu, jumlah, subtotal) VALUES ($id_transaksi, $id_menu, $jumlah, $subtotal)
+Kegunaan: Query ini memasukkan data detail transaksi ke dalam tabel detail_transaksi, termasuk ID transaksi, ID menu, jumlah item, dan subtotal.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT id_transaksi, tanggal FROM transaksi ORDER BY tanggal DESC, id_transaksi DESC
+Kegunaan: Mengambil daftar transaksi yang ada untuk pilihan dropdown, memungkinkan pengguna memilih transaksi yang akan ditambahkan detailnya.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT id_menu, nama_menu FROM menu ORDER BY nama_menu ASC
+Kegunaan: Mengambil daftar menu yang tersedia untuk pilihan dropdown, memungkinkan pengguna memilih menu yang akan ditambahkan ke detail transaksi.
+
+8. input_jenis_menu.php
+File ini berfungsi untuk menambahkan jenis menu baru ke database.
+
+Query Ditemukan:
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO jenis_menu (nama_jenis) VALUES ('$nama')
+Kegunaan: Query ini digunakan untuk menambahkan nama jenis menu baru ke dalam tabel jenis_menu. Ini adalah operasi "Create" dalam konteks pengelolaan jenis menu.
+
+9. input_menu.php
+File ini memungkinkan pengguna untuk menambahkan item menu baru ke database.
+
+Query Ditemukan:
+
+Jenis: CREATE (INSERT)
+
+Query:
+
+SQL
+
+INSERT INTO menu (nama_menu, harga, id_jenis, deskripsi, gambar) VALUES ('$nama_menu', $harga, $id_jenis, '$deskripsi', '$gambar')
+Kegunaan: Query ini digunakan untuk memasukkan detail menu baru (nama, harga, jenis, deskripsi, dan gambar) ke dalam tabel menu.
+
+Jenis: READ (SELECT)
+
+Query:
+
+SQL
+
+SELECT id_jenis, nama_jenis FROM jenis_menu ORDER BY nama_jenis ASC
+Kegunaan: Query ini mengambil daftar semua jenis menu yang tersedia dari tabel jenis_menu untuk ditampilkan dalam dropdown saat menambahkan menu baru.
+
+Rangkuman dan Penjelasan Keseluruhan
+Sistem ini menunjukkan implementasi operasi CRUD yang komprehensif untuk mengelola data restoran, meliputi:
+
+Pengelolaan Pengguna (Users):
+
+File index.php menangani otentikasi pengguna dengan melakukan operasi READ untuk memverifikasi kredensial login.
+
+Pengelolaan Menu dan Jenis Menu:
+
+input_jenis_menu.php memungkinkan operasi CREATE untuk menambahkan kategori menu baru.
+
+input_menu.php memungkinkan operasi CREATE untuk menambahkan item menu baru dengan detail lengkap, termasuk menghubungkannya ke jenis menu yang relevan. Kedua file ini juga melakukan operasi READ untuk mengisi dropdown dengan data yang sudah ada.
+
+Pengelolaan Transaksi:    
+
+input_transaksi.php bertanggung jawab untuk operasi CREATE dalam menambahkan ringkasan transaksi baru.
+
+input_detail_transaksi.php melakukan operasi CREATE untuk menambahkan rincian setiap item dalam transaksi, serta operasi READ untuk menampilkan daftar transaksi dan menu yang sudah ada.
+
+Kasir.php adalah pusat operasi penjualan, melakukan READ untuk detail menu, dan serangkaian operasi CREATE (dalam bentuk transaksi dan detail transaksi) saat checkout. Ini juga memiliki logika untuk pengelolaan keranjang belanja di sisi aplikasi (sesi PHP).
+
+Pengelolaan Booking:
+
+input_booking.php menangani operasi CREATE untuk booking meja baru, termasuk mencatat detail menu yang dipesan dalam booking tersebut. File ini juga melakukan READ untuk menampilkan daftar menu.
+
+Pelaporan dan Dashboard:
+
+tampil.php dan index1.php sebagian besar berfokus pada operasi READ. Mereka mengambil dan mengagregasi data dari berbagai tabel (transaksi, detail_transaksi, menu, jenis_menu, booking, detail_booking_menu) untuk menghasilkan laporan, statistik, dan tren, seperti menu terfavorit, pendapatan harian, dan jumlah transaksi. Ini penting untuk pemantauan kinerja restoran.
+
+Secara keseluruhan, program-program ini bekerja sama untuk menyediakan sistem manajemen restoran dasar yang mencakup pencatatan penjualan, pengelolaan menu, sistem booking, dan pelaporan analitik, semuanya dibangun di atas interaksi CRUD dengan database menggunakan PHP dan MySQLi.   
